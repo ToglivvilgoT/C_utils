@@ -1,5 +1,9 @@
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "d_array.h"
-#include "stdio.h"
 
 typedef struct {
   float x, y, z, w;
@@ -37,76 +41,96 @@ typedef struct {
   size_t       capacity, size;
 } FaceVec;
 
+int parse_v(char const *line, VertexVec *vertices)
+{
+  Vertex v = {0};
+
+  int n = sscanf(line, "v %f %f %f %f", &v.x, &v.y, &v.z, &v.w);
+
+  if (n < 3) return -1;
+
+  if (n == 3) v.w = 1.0f;
+
+  append((*vertices), v);
+  return 0;
+}
+
+int parse_vt(char const *line, TexCoordVec *uvs)
+{
+  (void)line;
+  (void)uvs;
+  return 0;
+}
+
+int parse_vn(char const *line, NormalVec *normals)
+{
+  (void)line;
+  (void)normals;
+  return 0;
+}
+
+int parse_f(char const *line, FaceVec *faces)
+{
+  (void)line;
+  (void)faces;
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   if (argc < 2)
   {
-    printf("too few args\n");
+    printf("usage: %s <file.obj>\n", argv[0]);
     return 1;
   }
-  char const *file_name = argv[1];
-  printf("Filename: %s\n", file_name);
 
-  FILE *f_ptr = fopen(file_name, "r");
+  FILE *f_ptr = fopen(argv[1], "r");
   if (!f_ptr)
   {
-    printf("failed to open file\n");
-    return -1;
+    perror("fopen");
+    return 1;
   }
 
-  VertexVec   vertices  = {0};
-  TexCoordVec uv_coords = {0};
-  NormalVec   normals   = {0};
-  FaceVec     faces     = {0};
-  int const   line_size = 256;
-  char        line_buf[line_size];
-  // # denotes comments, line starting with o can be discarded
-  char  *c;
-  float *f1, *f2, *f3, *f4;
-  int   *i1, *i2, *i3;
-  while (1)
-  {
-    // Parse vertices, w defaults to 1.0
-    // 	v x y z w
-    if (!fgets(line_buf, line_size, f_ptr)) goto error;
+  VertexVec   vertices = {0};
+  TexCoordVec uvs      = {0};
+  NormalVec   normals  = {0};
+  FaceVec     faces    = {0};
 
-    int n = sscanf(line_buf, "%s %f %f %f %f", c, f1, f2, f3, f4);
-    if (n < 1) goto error;
-    if (strcmp(c, "o") && strcmp(c, "#")) continue;
-    if (strcmp(c, "vt")) break;
-    if (n < 3) goto error;
-    Vertex v = {0};
-    v.x      = *f1;
-    v.y      = *f2;
-    v.z      = *f3;
-    if (n == 3)
-      v.w = 1.0;
-    else if (n == 4)
-      v.w = *f4;
-    else
-      goto error;
+  char line[256];
 
-    append(vertices, v);
-    // TODO: test print v
-  }
-  // Parse tex coords, v, w defaults to 0
+  while (fgets(line, sizeof(line), f_ptr))
   {
-    // 	vt u v w
+    if (*line == '\0' || *line == '#' || *line == '\n') continue;
+
+    if (line[0] == 'v')
+    {
+      if (line[1] == ' ')
+      {
+        if (parse_v(line, &vertices) < 0) goto error;
+      }
+      else if (line[1] == 't')
+      {
+        if (parse_vt(line, &uvs) < 0) goto error;
+      }
+      else if (line[1] == 'n')
+      {
+        if (parse_vn(line, &normals) < 0) goto error;
+      }
+    }
+    else if (line[0] == 'f')
+    {
+      if (parse_f(line, &faces) < 0) goto error;
+    }
   }
-  // Parse normals
+  if (feof(f_ptr))
   {
+    printf("EOF reached successfully\n");
+    fclose(f_ptr);
+    return 0;
   }
-  // 	vn x y z
-  // Skip parameter space vertices (for now)
-  {
-    //	vp ...
-  }
-  // Parse faces
-  {
-    //  f v_i/vt_i/vn_i
-  }
+
 error:
-  printf("Something fucked up\n");
-
-  // if (feof(f_ptr)) printf("End of file reached");
+  printf("OBJ parsing error\n");
+  fclose(f_ptr);
+  return 1;
 }
