@@ -33,12 +33,16 @@ typedef struct {
 } NormalVec;
 
 typedef struct {
-  int v_idx, vt_idx, vn_idx;
+  int v_i, vt_i, vn_i;
 } FaceElement;
 
 typedef struct {
-  FaceElement *items;
-  size_t       capacity, size;
+  FaceElement triangles[3];
+} Face;
+
+typedef struct {
+  Face  *items;
+  size_t capacity, size;
 } FaceVec;
 
 int parse_v(char const *line, VertexVec *vertices)
@@ -71,8 +75,19 @@ int parse_vn(char const *line, NormalVec *normals)
 
 int parse_f(char const *line, FaceVec *faces)
 {
-  (void)line;
-  (void)faces;
+  FaceElement f1 = {0};
+  FaceElement f2 = {0};
+  FaceElement f3 = {0};
+  Face        f  = {0};
+  // NOTE: assume all faces are triangles, implement triangulation in the future
+  int n =
+    sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d", &f1.v_i, &f1.vt_i, &f1.vn_i,
+           &f2.v_i, &f2.vt_i, &f2.vn_i, &f3.v_i, &f3.vt_i, &f3.vn_i);
+  if (n < 9) return -1;
+  f.triangles[0] = f1;
+  f.triangles[1] = f2;
+  f.triangles[2] = f3;
+  append((*faces), f);
   return 0;
 }
 
