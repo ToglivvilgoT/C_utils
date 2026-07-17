@@ -19,3 +19,7 @@ test_files: test_files.c file_handling.c file_handling.h
 test_obj_loader: obj_loader.c 
 	gcc obj_loader.c $(flags) -o test
 	./test utah_teapot.obj
+
+test_vector: vector.h
+	gcc test_vector.c -o test
+	./test
