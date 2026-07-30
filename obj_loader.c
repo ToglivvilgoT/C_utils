@@ -1,36 +1,25 @@
-#include <ctype.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
-#include "d_array.h"
+#include "vector.h"
+
 
 typedef struct {
   float x, y, z, w;
 } Vertex;
 
-typedef struct {
-  Vertex *items;
-  size_t  capacity, size;
-} VertexVec;
+INITIALIZE_VECTOR_TEMPLATE(Vertex);
 
 typedef struct {
   float u, v, w;
 } TexCoord;
 
-typedef struct {
-  TexCoord *items;
-  size_t    capacity, size;
-} TexCoordVec;
+INITIALIZE_VECTOR_TEMPLATE(TexCoord);
 
 typedef struct {
   float x, y, z;
 } Normal;
 
-typedef struct {
-  Normal *items;
-  size_t  capacity, size;
-} NormalVec;
+INITIALIZE_VECTOR_TEMPLATE(Normal);
 
 typedef struct {
   int v_i, vt_i, vn_i;
@@ -40,10 +29,8 @@ typedef struct {
   FaceElement triangles[3];
 } Face;
 
-typedef struct {
-  Face  *items;
-  size_t capacity, size;
-} FaceVec;
+INITIALIZE_VECTOR_TEMPLATE(Face);
+
 
 int parse_v(char const *line, VertexVec *vertices)
 {
@@ -55,7 +42,7 @@ int parse_v(char const *line, VertexVec *vertices)
 
   if (n == 3) v.w = 1.0f;
 
-  append((*vertices), v);
+  Vertex_append(vertices, v);
   return 0;
 }
 
@@ -80,14 +67,22 @@ int parse_f(char const *line, FaceVec *faces)
   FaceElement f3 = {0};
   Face        f  = {0};
   // NOTE: assume all faces are triangles, implement triangulation in the future
-  int n =
-    sscanf(line, "f %d/%d/%d %d/%d/%d %d/%d/%d", &f1.v_i, &f1.vt_i, &f1.vn_i,
-           &f2.v_i, &f2.vt_i, &f2.vn_i, &f3.v_i, &f3.vt_i, &f3.vn_i);
+  int n = sscanf(line,
+                 "f %d/%d/%d %d/%d/%d %d/%d/%d",
+                 &f1.v_i,
+                 &f1.vt_i,
+                 &f1.vn_i,
+                 &f2.v_i,
+                 &f2.vt_i,
+                 &f2.vn_i,
+                 &f3.v_i,
+                 &f3.vt_i,
+                 &f3.vn_i);
   if (n < 9) return -1;
   f.triangles[0] = f1;
   f.triangles[1] = f2;
   f.triangles[2] = f3;
-  append((*faces), f);
+  Face_append(faces, f);
   return 0;
 }
 
