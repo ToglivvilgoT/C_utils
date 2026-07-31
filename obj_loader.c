@@ -1,71 +1,55 @@
-#include <stdio.h>
+#include "obj_loader.h"
 
-#include "vector.h"
+INITIALIZE_VECTOR_TEMPLATE(obj_Vertex);
+INITIALIZE_VECTOR_TEMPLATE(obj_TexCoord);
+INITIALIZE_VECTOR_TEMPLATE(obj_Normal);
+INITIALIZE_VECTOR_TEMPLATE(obj_Face);
 
-
-typedef struct {
-  float x, y, z, w;
-} Vertex;
-
-INITIALIZE_VECTOR_TEMPLATE(Vertex);
-
-typedef struct {
-  float u, v, w;
-} TexCoord;
-
-INITIALIZE_VECTOR_TEMPLATE(TexCoord);
-
-typedef struct {
-  float x, y, z;
-} Normal;
-
-INITIALIZE_VECTOR_TEMPLATE(Normal);
-
-typedef struct {
-  int v_i, vt_i, vn_i;
-} FaceElement;
-
-typedef struct {
-  FaceElement triangles[3];
-} Face;
-
-INITIALIZE_VECTOR_TEMPLATE(Face);
-
-
-int parse_v(char const *line, VertexVec *vertices)
+int parse_v(char const *line, obj_VertexVec *vertices)
 {
-  Vertex v = {0};
+  obj_Vertex v = {0};
 
   int n = sscanf(line, "v %f %f %f %f", &v.x, &v.y, &v.z, &v.w);
 
   if (n < 3) return -1;
-
   if (n == 3) v.w = 1.0f;
 
-  Vertex_append(vertices, v);
+  obj_Vertex_append(vertices, v);
   return 0;
 }
 
-int parse_vt(char const *line, TexCoordVec *uvs)
+int parse_vt(char const *line, obj_TexCoordVec *uvs)
 {
-  (void)line;
-  (void)uvs;
+  obj_TexCoord uv = {0};
+
+  int n = sscanf(line, "vt %f %f %f", &uv.u, &uv.v, &uv.w);
+  if (n < 1) return -1;
+  if (n < 3) uv.w = 0.0f;
+  if (n < 2) uv.v = 0.0f;
+
+  obj_TexCoord_append(uvs, uv);
   return 0;
 }
 
-int parse_vn(char const *line, NormalVec *normals)
+int parse_vn(char const *line, obj_NormalVec *normals)
 {
   (void)line;
   (void)normals;
+  obj_Normal norm = {0};
+
+  int n = sscanf(line, "vn %f %f %f", &norm.x, &norm.y, &norm.z);
+  if (n < 3) return -1;
+
+  obj_Normal_append(normals, norm);
   return 0;
 }
 
-int parse_f(char const *line, FaceVec *faces)
+int parse_f(char const *line, obj_FaceVec *faces)
 {
-  FaceElement f1 = {0};
-  FaceElement f2 = {0};
-  FaceElement f3 = {0};
-  Face        f  = {0};
+  obj_FaceElement f1 = {0};
+  obj_FaceElement f2 = {0};
+  obj_FaceElement f3 = {0};
+  obj_Face        f  = {0};
   // NOTE: assume all faces are triangles, implement triangulation in the future
   int n = sscanf(line,
                  "f %d/%d/%d %d/%d/%d %d/%d/%d",
@@ -82,29 +66,23 @@ int parse_f(char const *line, FaceVec *faces)
   f.triangles[0] = f1;
   f.triangles[1] = f2;
   f.triangles[2] = f3;
-  Face_append(faces, f);
+  obj_Face_append(faces, f);
   return 0;
 }
 
-int main(int argc, char **argv)
+bool load_obj_file(char const *filename, ObjObject *obj)
 {
-  if (argc < 2)
-  {
-    printf("usage: %s <file.obj>\n", argv[0]);
-    return 1;
-  }
-
-  FILE *f_ptr = fopen(argv[1], "r");
+  FILE *f_ptr = fopen(filename, "r");
   if (!f_ptr)
   {
     perror("fopen");
-    return 1;
+    return false;
   }
 
-  VertexVec   vertices = {0};
-  TexCoordVec uvs      = {0};
-  NormalVec   normals  = {0};
-  FaceVec     faces    = {0};
+  obj_VertexVec   vertices = {0};
+  obj_TexCoordVec uvs      = {0};
+  obj_NormalVec   normals  = {0};
+  obj_FaceVec     faces    = {0};
 
   char line[256];
 
@@ -132,15 +110,35 @@ int main(int argc, char **argv)
       if (parse_f(line, &faces) < 0) goto error;
     }
   }
-  if (feof(f_ptr))
-  {
-    printf("EOF reached successfully\n");
-    fclose(f_ptr);
-    return 0;
-  }
+
+  fclose(f_ptr);
+
+  obj->verts        = vertices.data;
+  obj->vertex_count = vertices.size;
+  obj->uvs          = uvs.data;
+  obj->uv_count     = uvs.size;
+  obj->normals      = normals.data;
+  obj->normal_count = normals.size;
+  obj->faces        = faces.data;
+  obj->face_count   = faces.size;
+
+  return true;
 
 error:
-  printf("OBJ parsing error\n");
   fclose(f_ptr);
-  return 1;
+
+  free(vertices.data);
+  free(uvs.data);
+  free(normals.data);
+  free(faces.data);
+
+  return false;
+}
+
+void free_obj_object(ObjObject *obj)
+{
+  free(obj->verts);
+  free(obj->uvs);
+  free(obj->normals);
+  free(obj->faces);
 }
