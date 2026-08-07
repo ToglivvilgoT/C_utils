@@ -90,13 +90,13 @@
   }                                                                            \
                                                                                \
   static inline void TYPE##_sort(TYPE##Vec *vec,                               \
-                                 int (*cmp)(const void *, const void *))       \
+                                 int (*cmp)(void const *, void const *))       \
   {                                                                            \
     qsort(vec->data, vec->size, sizeof(*vec->data), cmp);                      \
   }                                                                            \
                                                                                \
   static inline bool TYPE##_contains(const TYPE##Vec *vec, TYPE elem,          \
-                                     int (*cmp)(const void *, const void *))   \
+                                     int (*cmp)(TYPE const *, TYPE const *))   \
   {                                                                            \
     for (size_t i = 0; i < vec->size; i++)                                     \
     {                                                                          \
