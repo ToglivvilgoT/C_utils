@@ -90,13 +90,13 @@
   }                                                                            \
                                                                                \
   static inline void TYPE##_sort(TYPE##Vec *vec,                               \
-                                 int (*cmp)(void const *, void const *))       \
+                                 int (*cmp)(const void *, const void *))       \
   {                                                                            \
     qsort(vec->data, vec->size, sizeof(*vec->data), cmp);                      \
   }                                                                            \
                                                                                \
   static inline bool TYPE##_contains(const TYPE##Vec *vec, TYPE elem,          \
-                                     int (*cmp)(TYPE const *, TYPE const *))   \
+                                     int (*cmp)(const void *, const void *))   \
   {                                                                            \
     for (size_t i = 0; i < vec->size; i++)                                     \
     {                                                                          \
@@ -149,18 +149,17 @@
     return ret_val;                                                            \
   }                                                                            \
                                                                                \
-  static inline TYPE##Vec TYPE##_filter(const TYPE##Vec *vec,                  \
-                                        bool (*func)(TYPE))                    \
+  static inline TYPE##Vec TYPE##_filter(TYPE##Vec *vec, bool (*func)(TYPE))    \
   {                                                                            \
-    TYPE##Vec result = TYPE##_copy(vec);                                       \
-    TYPE##_clear(&result);                                                     \
-                                                                               \
-    for (size_t i = 0; i < vec->size; i++)                                     \
+    size_t curr_write = 0;                                                     \
+    for (size_t curr_read = 0; curr_read < vec->size; ++curr_read)             \
     {                                                                          \
-      if (func(vec->data[i])) TYPE##_append(&result, vec->data[i]);            \
+      if (func(vec->data[curr_read]))                                          \
+      {                                                                        \
+        vec->data[curr_write++] = vec->data[curr_read];                        \
+      }                                                                        \
     }                                                                          \
-                                                                               \
-    return result;                                                             \
+    vec->size = curr_write;                                                    \
   }                                                                            \
                                                                                \
   static inline void TYPE##_for_each(const TYPE##Vec *vec,                     \
@@ -173,4 +172,9 @@
                                 void      *ctx)                                \
   {                                                                            \
     for (size_t i = 0; i < vec->size; i++) func(&vec->data[i], ctx);           \
+  }                                                                            \
+                                                                               \
+  static inline void TYPE##_swap_remove(TYPE##Vec *vec, size_t idx)            \
+  {                                                                            \
+    vec->data[idx] = vec->data[--vec->size];                                   \
   }
