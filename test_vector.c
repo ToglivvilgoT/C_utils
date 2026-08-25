@@ -38,7 +38,6 @@ static void print_int(int x, void *ctx)
   printf("%d ", x);
 }
 
-
 int main(void)
 {
   intVec vec = {0};
@@ -124,7 +123,8 @@ int main(void)
 
   printf("=== filter ===\n");
 
-  intVec evens = int_filter(&vec, is_even);
+  intVec evens = int_copy(&vec);
+  int_filter(&evens, is_even);
 
   for (size_t i = 0; i < evens.size; i++) printf("%d ", evens.data[i]);
 
