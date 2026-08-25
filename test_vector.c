@@ -6,6 +6,9 @@
 
 
 INITIALIZE_VECTOR_TEMPLATE(int)
+INITIALIZE_VECTOR_TEMPLATE(double)
+INITIALIZE_VECTOR_MAP(int, double)
+
 
 
 static int compare_ints(void const *a, void const *b)
@@ -36,6 +39,23 @@ static void print_int(int x, void *ctx)
 {
   (void)ctx;
   printf("%d ", x);
+}
+
+double map_function(int *val)
+{
+  return *val + 0.5;
+}
+
+static void test_MAP()
+{
+  printf("=== MAP ===\n");
+  intVec vec = {0};
+  int_append(&vec, 0);
+  int_append(&vec, 1);
+  int_append(&vec, 2);
+  doubleVec res = map_int_double(&vec, map_function);
+  for (size_t i = 0; i < res.size; i++) printf("%f ", res.data[i]);
+  printf("\n\n");
 }
 
 int main(void)
@@ -157,6 +177,8 @@ int main(void)
   int_free(&vec);
   int_free(&copy);
   int_free(&evens);
+
+  test_MAP();
 
   printf("done\n");
 

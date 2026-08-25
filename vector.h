@@ -13,20 +13,25 @@
     TYPE  *data;                                                               \
   } TYPE##Vec;                                                                 \
                                                                                \
+  static inline void TYPE##_inc_cap(TYPE##Vec *vec)                            \
+  {                                                                            \
+    vec->capacity = vec->capacity ? vec->capacity * 2 : 256;                   \
+                                                                               \
+    TYPE *tmp = realloc(vec->data, vec->capacity * sizeof(*vec->data));        \
+    if (!tmp)                                                                  \
+    {                                                                          \
+      fprintf(stderr, "Vector allocation failed\n");                           \
+      abort();                                                                 \
+    }                                                                          \
+                                                                               \
+    vec->data = tmp;                                                           \
+  }                                                                            \
+                                                                               \
   static inline void TYPE##_append(TYPE##Vec *vec, TYPE x)                     \
   {                                                                            \
     if (vec->size >= vec->capacity)                                            \
     {                                                                          \
-      vec->capacity = vec->capacity ? vec->capacity * 2 : 256;                 \
-                                                                               \
-      TYPE *tmp = realloc(vec->data, vec->capacity * sizeof(*vec->data));      \
-      if (!tmp)                                                                \
-      {                                                                        \
-        fprintf(stderr, "Vector allocation failed\n");                         \
-        abort();                                                               \
-      }                                                                        \
-                                                                               \
-      vec->data = tmp;                                                         \
+      TYPE##_inc_cap(vec);                                                     \
     }                                                                          \
                                                                                \
     vec->data[vec->size++] = x;                                                \
@@ -68,16 +73,7 @@
                                                                                \
     if (vec->size >= vec->capacity)                                            \
     {                                                                          \
-      vec->capacity = vec->capacity ? vec->capacity * 2 : 256;                 \
-                                                                               \
-      TYPE *tmp = realloc(vec->data, vec->capacity * sizeof(*vec->data));      \
-      if (!tmp)                                                                \
-      {                                                                        \
-        fprintf(stderr, "Vector allocation failed\n");                         \
-        abort();                                                               \
-      }                                                                        \
-                                                                               \
-      vec->data = tmp;                                                         \
+      TYPE##_inc_cap(vec);                                                     \
     }                                                                          \
                                                                                \
     size_t nr_of_elems = vec->size - i;                                        \
@@ -177,4 +173,18 @@
   static inline void TYPE##_swap_remove(TYPE##Vec *vec, size_t idx)            \
   {                                                                            \
     vec->data[idx] = vec->data[--vec->size];                                   \
+  }                                                                            \
+
+#define INITIALIZE_VECTOR_MAP(FROM_TYPE, TO_TYPE)                              \
+  static inline TO_TYPE##Vec map_##FROM_TYPE##_##TO_TYPE(                      \
+    FROM_TYPE##Vec *vec,                                                       \
+    TO_TYPE (func)(FROM_TYPE*)                                                 \
+  )                                                                            \
+  {                                                                            \
+    TO_TYPE##Vec res = {0};                                                    \
+    for (size_t i = 0; i < vec->size; ++i)                                     \
+    {                                                                          \
+      TO_TYPE##_append(&res, func(&(vec->data[i])));                           \
+    }                                                                          \
+    return res;                                                                \
   }
